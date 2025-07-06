@@ -1,0 +1,446 @@
+openapi: 3.0.0
+info:
+  title: takeabreak.life API
+  version: 1.0.0
+  description: MVP API contract for takeabreak.life wellness platform
+
+servers:
+  - url: https://api.takeabreak.life/v1
+    description: Production API
+
+paths:
+  # Authentication Endpoints
+  /auth/google:
+    post:
+      summary: Authenticate with Google OAuth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+                  description: OAuth authorization code
+      responses:
+        200:
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+
+  /auth/refresh:
+    post:
+      summary: Refresh access token
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+
+  /auth/logout:
+    post:
+      summary: Logout user
+      security:
+        - bearerAuth: []
+      responses:
+        204:
+          description: Logout successful
+
+  # User Endpoints
+  /users/me:
+    get:
+      summary: Get current user profile
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+    
+    patch:
+      summary: Update user profile
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                timezone:
+                  type: string
+                preferred_break_duration:
+                  type: integer
+                biggest_challenge:
+                  type: string
+                  enum: [meetings, focus, energy, stress]
+      responses:
+        200:
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  # Calendar Endpoints
+  /calendar/connect:
+    post:
+      summary: Connect calendar account
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                provider:
+                  type: string
+                  enum: [google, microsoft]
+                code:
+                  type: string
+      responses:
+        201:
+          description: Calendar connected
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+
+  /calendar/sync:
+    post:
+      summary: Trigger calendar sync
+      security:
+        - bearerAuth: []
+      responses:
+        202:
+          description: Sync started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sync_id:
+                    type: string
+                  status:
+                    type: string
+
+  # Dashboard Endpoints
+  /dashboard:
+    get:
+      summary: Get dashboard data
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Dashboard data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dashboard'
+
+  # Break Recommendations
+  /recommendations/today:
+    get:
+      summary: Get today's break recommendation
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Today's recommendation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recommendation'
+
+  /recommendations/{id}/accept:
+    post:
+      summary: Accept a break recommendation
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Recommendation accepted
+
+  /recommendations/{id}/dismiss:
+    post:
+      summary: Dismiss a break recommendation
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Recommendation dismissed
+
+  # Break Sessions
+  /sessions:
+    get:
+      summary: Get available break sessions
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+            enum: [mindfulness, movement, rest]
+      responses:
+        200:
+          description: List of sessions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BreakSession'
+
+  /sessions/{id}:
+    get:
+      summary: Get session details
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Session details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BreakSession'
+
+  # Break Tracking
+  /breaks/start:
+    post:
+      summary: Start a break session
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - session_id
+              properties:
+                session_id:
+                  type: string
+                recommendation_id:
+                  type: string
+      responses:
+        201:
+          description: Break started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  break_id:
+                    type: string
+                  started_at:
+                    type: string
+                    format: date-time
+
+  /breaks/{id}/complete:
+    post:
+      summary: Complete a break session
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                completion_percentage:
+                  type: integer
+                  minimum: 0
+                  maximum: 100
+                felt_better:
+                  type: boolean
+      responses:
+        200:
+          description: Break completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  streak:
+                    type: integer
+                  message:
+                    type: string
+
+  # User Progress
+  /progress/streak:
+    get:
+      summary: Get current streak
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Streak data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  current_streak:
+                    type: integer
+                  longest_streak:
+                    type: integer
+                  last_break_date:
+                    type: string
+                    format: date
+
+# Components
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    AuthResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        expires_in:
+          type: integer
+        user:
+          $ref: '#/components/schemas/User'
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        full_name:
+          type: string
+        avatar_url:
+          type: string
+        company_domain:
+          type: string
+        timezone:
+          type: string
+        preferred_break_duration:
+          type: integer
+        biggest_challenge:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    Dashboard:
+      type: object
+      properties:
+        greeting:
+          type: string
+        current_date:
+          type: string
+        streak:
+          type: object
+          properties:
+            current:
+              type: integer
+            icon:
+              type: string
+        stats:
+          type: object
+          properties:
+            breaks_this_week:
+              type: integer
+            mindful_minutes:
+              type: integer
+        recommendation:
+          $ref: '#/components/schemas/Recommendation'
+        recent_breaks:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date
+              count:
+                type: integer
+
+    Recommendation:
+      type: object
+      properties:
+        id:
+          type: string
+        session:
+          $ref: '#/components/schemas/BreakSession'
+        recommended_time:
+          type: string
+          format: date-time
+        reason:
+          type: string
+        status:
+          type: string
+          enum: [pending, accepted, dismissed, completed]
+
+    BreakSession:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+          enum: [mindfulness, movement, rest]
+        duration_minutes:
+          type: integer
+        thumbnail_url:
+          type: string
+        content_url:
+          type: string
+        content_type:
+          type: string
+          enum: [audio, video, mixed]

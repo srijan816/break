@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-inter: 'Inter', system-ui, sans-serif;
+    --font-manrope: 'Manrope', var(--font-inter);
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-white text-gray-900;
+  }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Focus styles */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-primary ring-offset-2;
+  }
+
+  /* Disable focus styles for mouse users */
+  *:focus:not(:focus-visible) {
+    @apply outline-none ring-0;
+  }
+}
+
+@layer components {
+  /* Card component */
+  .card {
+    @apply bg-white rounded-xl shadow-sm border border-gray-100 p-6;
+  }
+
+  /* Button base styles */
+  .btn {
+    @apply inline-flex items-center justify-center rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply btn bg-primary text-white hover:bg-primary-dark focus:ring-primary;
+  }
+
+  .btn-secondary {
+    @apply btn bg-secondary text-gray-900 hover:bg-secondary-dark focus:ring-secondary;
+  }
+
+  /* Loading spinner */
+  .spinner {
+    @apply inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent;
+  }
+}
+
+@layer utilities {
+  /* Hide scrollbar but keep functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Glassmorphism effect */
+  .glass {
+    @apply backdrop-blur-lg bg-white/80 border border-white/20;
+  }
+
+  /* Text gradient */
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary-dark;
+  }
+}
