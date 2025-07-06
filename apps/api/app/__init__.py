@@ -32,11 +32,13 @@ def create_app(config_name='default'):
     from app.breaks import breaks_bp
     from app.calendar import calendar_bp
     from app.users import users_bp
+    from app.recommendations import recommendations_bp
     
     app.register_blueprint(auth_bp, url_prefix='/api/v1/auth')
     app.register_blueprint(breaks_bp, url_prefix='/api/v1/breaks')
     app.register_blueprint(calendar_bp, url_prefix='/api/v1/calendar')
     app.register_blueprint(users_bp, url_prefix='/api/v1/users')
+    app.register_blueprint(recommendations_bp, url_prefix='/api/v1/recommendations')
     
     # Health check endpoint
     @app.route('/health')

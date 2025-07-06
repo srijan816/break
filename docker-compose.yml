@@ -62,17 +62,12 @@ services:
       dockerfile: infrastructure/docker/Dockerfile.web
     container_name: takeabreak-web
     environment:
-      NODE_ENV: development
+      NODE_ENV: production
       NEXT_PUBLIC_API_URL: http://localhost:5001
     ports:
       - "3000:3000"
-    volumes:
-      - ./apps/web:/app/apps/web
-      - /app/apps/web/node_modules
-      - /app/apps/web/.next
     depends_on:
       - api
-    command: ["pnpm", "dev"]
 
   # Celery Worker (for background tasks)
   celery:
@@ -91,7 +86,7 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    command: ["celery", "-A", "app.celery_app:celery", "worker", "--loglevel=info"]
+    command: ["celery", "-A", "celery_app:celery", "worker", "--loglevel=info"]
 
 volumes:
   postgres_data:

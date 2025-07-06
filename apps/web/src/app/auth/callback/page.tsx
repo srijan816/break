@@ -4,12 +4,12 @@
  */
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { exchangeCodeForTokens } from '@/lib/auth';
 import { useAuthStore } from '@/store/auth';
 
-export default function AuthCallback() {
+function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { setAuth, setLoading, clearAuth } = useAuthStore();
@@ -73,5 +73,22 @@ export default function AuthCallback() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function AuthCallback() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 to-secondary/5">
+        <div className="text-center">
+          <div className="spinner mb-4"></div>
+          <h2 className="text-xl font-semibold text-gray-800">
+            Loading...
+          </h2>
+        </div>
+      </div>
+    }>
+      <AuthCallbackContent />
+    </Suspense>
   );
 }
