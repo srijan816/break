@@ -2,10 +2,12 @@ from flask import Flask
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+from flask_jwt_extended import JWTManager
 
 # Initialize extensions
 db = SQLAlchemy()
 migrate = Migrate()
+jwt = JWTManager()
 
 def create_app(config_name='default'):
     """Application factory pattern"""
@@ -17,6 +19,7 @@ def create_app(config_name='default'):
     # Initialize extensions
     db.init_app(app)
     migrate.init_app(app, db)
+    jwt.init_app(app)
     
     # Configure CORS
     CORS(app, 
@@ -28,10 +31,12 @@ def create_app(config_name='default'):
     from app.auth import auth_bp
     from app.breaks import breaks_bp
     from app.calendar import calendar_bp
+    from app.users import users_bp
     
     app.register_blueprint(auth_bp, url_prefix='/api/v1/auth')
     app.register_blueprint(breaks_bp, url_prefix='/api/v1/breaks')
     app.register_blueprint(calendar_bp, url_prefix='/api/v1/calendar')
+    app.register_blueprint(users_bp, url_prefix='/api/v1/users')
     
     # Health check endpoint
     @app.route('/health')
