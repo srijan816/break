@@ -54,4 +54,4 @@ class CompanyAnalytics(db.Model):
     )
     
     def __repr__(self):
-        return f'<CompanyAnalytics {self.company_domain} on {self.date}>']
+        return f'<CompanyAnalytics {self.company_domain} on {self.date}>'

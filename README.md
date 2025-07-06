@@ -8,23 +8,67 @@ A premium corporate wellness web application that integrates with work calendars
 
 ### Prerequisites
 
+**Required:**
 - **Node.js** 18+ with **pnpm** 8+
 - **Python** 3.11+
-- **Docker** and **Docker Compose**
-- **Git**
 
-### One-Command Setup
+**Recommended (for easiest setup):**
+- **Docker** and **Docker Compose**
+
+### Setup Options
+
+#### Option 1: Docker Setup (Recommended)
 
 ```bash
 # Clone the repository
 git clone https://github.com/srijan816/break.git
 cd break
 
-# Run the setup script
+# Make sure Docker is running, then:
 ./infrastructure/scripts/setup.sh
 
 # Start the application
 pnpm dev
+```
+
+#### Option 2: Local PostgreSQL Setup
+
+If you don't have Docker, follow these steps:
+
+```bash
+# Clone the repository
+git clone https://github.com/srijan816/break.git
+cd break
+
+# Run setup script (it will detect no Docker and give instructions)
+./infrastructure/scripts/setup.sh
+
+# Install PostgreSQL locally
+brew install postgresql@16  # macOS
+# OR
+sudo apt install postgresql-16  # Ubuntu
+
+# Create database
+createdb takeabreak_dev
+
+# Set up environment
+cd apps/api
+cp .env.example .env
+# Edit .env to update DATABASE_URL with your local PostgreSQL credentials
+
+# Run migrations and seed data
+source venv/bin/activate
+alembic upgrade head
+python scripts/seed.py
+
+# Start frontend (Terminal 1)
+cd ../../apps/web
+pnpm dev
+
+# Start backend (Terminal 2)
+cd ../api
+source venv/bin/activate
+python run.py
 ```
 
 The application will be available at:
@@ -235,23 +279,36 @@ POST /api/v1/calendar/sync   # Sync calendar
 
 ### Common Issues
 
-1. **Port conflicts**
+1. **Docker not running error**
+   ```bash
+   # Start Docker Desktop or install Docker
+   # Then re-run: ./infrastructure/scripts/setup.sh
+   
+   # Alternative: Use local PostgreSQL setup (see Option 2 above)
+   ```
+
+2. **Port conflicts**
    ```bash
    # Check what's using ports
    lsof -i :3000
    lsof -i :5000
-   ```
-
-2. **Database connection errors**
-   ```bash
-   # Restart PostgreSQL
-   docker-compose restart postgres
    
-   # Check logs
-   docker-compose logs postgres
+   # Kill processes if needed
+   kill -9 $(lsof -t -i:3000)
    ```
 
-3. **Python virtual environment issues**
+3. **Database connection errors**
+   ```bash
+   # For Docker setup:
+   docker-compose restart postgres
+   docker-compose logs postgres
+   
+   # For local PostgreSQL:
+   brew services restart postgresql@16  # macOS
+   sudo systemctl restart postgresql    # Ubuntu
+   ```
+
+4. **Python virtual environment issues**
    ```bash
    # Recreate venv
    cd apps/api
@@ -259,6 +316,25 @@ POST /api/v1/calendar/sync   # Sync calendar
    python3 -m venv venv
    source venv/bin/activate
    pip install -r requirements.txt
+   ```
+
+5. **Alembic migration errors**
+   ```bash
+   # Reset database (⚠️ destructive)
+   cd apps/api
+   source venv/bin/activate
+   
+   # For Docker:
+   docker-compose down -v postgres
+   docker-compose up -d postgres
+   
+   # For local PostgreSQL:
+   dropdb takeabreak_dev
+   createdb takeabreak_dev
+   
+   # Then run migrations:
+   alembic upgrade head
+   python scripts/seed.py
    ```
 
 ### Getting Help

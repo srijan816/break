@@ -96,4 +96,4 @@ class CompletedBreak(db.Model):
     recommendation = relationship('BreakRecommendation', back_populates='completed_break')
     
     def __repr__(self):
-        return f'<CompletedBreak {self.session_id} by {self.user_id}>']
+        return f'<CompletedBreak {self.session_id} by {self.user_id}>'

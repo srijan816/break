@@ -43,9 +43,10 @@ CREATE TABLE calendar_connections (
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     
     -- Constraints
-    UNIQUE(user_id, provider),
-    INDEX idx_calendar_user (user_id)
+    UNIQUE(user_id, provider)
 );
+
+CREATE INDEX idx_calendar_user ON calendar_connections (user_id);
 
 -- Break content library (seeded data for MVP)
 CREATE TABLE break_sessions (
@@ -60,12 +61,12 @@ CREATE TABLE break_sessions (
     
     -- MVP: Simple content, no complex metadata
     is_active BOOLEAN DEFAULT true,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    
-    -- Indexes
-    INDEX idx_sessions_category (category),
-    INDEX idx_sessions_duration (duration_minutes)
+    created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Indexes for break_sessions
+CREATE INDEX idx_sessions_category ON break_sessions (category);
+CREATE INDEX idx_sessions_duration ON break_sessions (duration_minutes);
 
 -- User's calendar events (cached for analysis)
 CREATE TABLE calendar_events (
@@ -86,9 +87,10 @@ CREATE TABLE calendar_events (
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     
     -- Constraints
-    UNIQUE(user_id, external_id),
-    INDEX idx_events_user_time (user_id, start_time, end_time)
+    UNIQUE(user_id, external_id)
 );
+
+CREATE INDEX idx_events_user_time ON calendar_events (user_id, start_time, end_time);
 
 -- Break recommendations (AI suggestions)
 CREATE TABLE break_recommendations (
@@ -100,12 +102,12 @@ CREATE TABLE break_recommendations (
     score FLOAT NOT NULL, -- Algorithm confidence score
     status VARCHAR(20) DEFAULT 'pending', -- 'pending', 'accepted', 'dismissed', 'completed'
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    expires_at TIMESTAMPTZ NOT NULL, -- End of workday
-    
-    -- Indexes
-    INDEX idx_recommendations_user_time (user_id, recommended_time),
-    INDEX idx_recommendations_status (user_id, status)
+    expires_at TIMESTAMPTZ NOT NULL -- End of workday
 );
+
+-- Indexes for break_recommendations
+CREATE INDEX idx_recommendations_user_time ON break_recommendations (user_id, recommended_time);
+CREATE INDEX idx_recommendations_status ON break_recommendations (user_id, status);
 
 -- Completed breaks (user activity)
 CREATE TABLE completed_breaks (
@@ -121,12 +123,12 @@ CREATE TABLE completed_breaks (
     -- Simple MVP feedback
     felt_better BOOLEAN, -- Post-session quick feedback
     
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    
-    -- Indexes
-    INDEX idx_completed_user_date (user_id, started_at),
-    INDEX idx_completed_session (session_id)
+    created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Indexes for completed_breaks
+CREATE INDEX idx_completed_user_date ON completed_breaks (user_id, started_at);
+CREATE INDEX idx_completed_session ON completed_breaks (session_id);
 
 -- User streaks (motivation feature)
 CREATE TABLE user_streaks (
@@ -136,11 +138,11 @@ CREATE TABLE user_streaks (
     longest_streak INTEGER DEFAULT 0,
     last_break_date DATE,
     streak_started_at DATE,
-    updated_at TIMESTAMPTZ DEFAULT NOW(),
-    
-    -- Index
-    INDEX idx_streaks_user (user_id)
+    updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Index for user_streaks
+CREATE INDEX idx_streaks_user ON user_streaks (user_id);
 
 -- Company aggregates (privacy-preserving analytics)
 CREATE TABLE company_analytics (
@@ -156,28 +158,14 @@ CREATE TABLE company_analytics (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     
     -- Constraints
-    UNIQUE(company_domain, date),
-    INDEX idx_analytics_company_date (company_domain, date)
+    UNIQUE(company_domain, date)
 );
 
--- Row Level Security Policies
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE calendar_connections ENABLE ROW LEVEL SECURITY;
-ALTER TABLE calendar_events ENABLE ROW LEVEL SECURITY;
-ALTER TABLE break_recommendations ENABLE ROW LEVEL SECURITY;
-ALTER TABLE completed_breaks ENABLE ROW LEVEL SECURITY;
-ALTER TABLE user_streaks ENABLE ROW LEVEL SECURITY;
+CREATE INDEX idx_analytics_company_date ON company_analytics (company_domain, date);
 
--- Users can only see their own data
-CREATE POLICY users_policy ON users FOR ALL USING (auth.uid() = id);
-CREATE POLICY calendar_connections_policy ON calendar_connections FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY calendar_events_policy ON calendar_events FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY break_recommendations_policy ON break_recommendations FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY completed_breaks_policy ON completed_breaks FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY user_streaks_policy ON user_streaks FOR ALL USING (auth.uid() = user_id);
-
--- Break sessions are public read
-CREATE POLICY break_sessions_read_policy ON break_sessions FOR SELECT USING (true);
+-- Additional performance indexes
+CREATE INDEX idx_completed_breaks_date ON completed_breaks(started_at);
+CREATE INDEX idx_recommendations_expired ON break_recommendations(expires_at) WHERE status = 'pending';
 
 -- Functions for automatic timestamp updates
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -232,6 +220,11 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Indexes for performance
-CREATE INDEX idx_completed_breaks_date ON completed_breaks(started_at);
-CREATE INDEX idx_recommendations_expired ON break_recommendations(expires_at) WHERE status = 'pending';
+-- Create alembic version table for migration tracking
+CREATE TABLE IF NOT EXISTS alembic_version (
+    version_num VARCHAR(32) NOT NULL,
+    CONSTRAINT alembic_version_pkc PRIMARY KEY (version_num)
+);
+
+-- Mark initial migration as applied
+INSERT INTO alembic_version (version_num) VALUES ('001') ON CONFLICT DO NOTHING;

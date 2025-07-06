@@ -9,6 +9,7 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        border: 'hsl(214.3 31.8% 91.4%)',
         primary: {
           DEFAULT: '#00CED1',
           dark: '#20B2AA',
@@ -33,6 +34,10 @@ const config: Config = {
           800: '#303030',
           900: '#202020',
         }
+      },
+      ringColor: {
+        primary: '#00CED1',
+        secondary: '#F5DEB3',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
